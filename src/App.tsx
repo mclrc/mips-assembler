@@ -22,7 +22,7 @@ ori $a1, $a1, 4
 lui $a2, 0
 ori $a2, $a2, 42
 sb $a2, 0($a1)
-j L0
+beqz $a2, L2
 `
 
 // Should only contain a basic text area for he MIPS code
