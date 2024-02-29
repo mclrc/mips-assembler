@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react'
 import { useState } from 'react'
-import './App.css'
 import { assemble } from './assemble'
 import { omit } from 'lodash-es'
 
