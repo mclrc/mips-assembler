@@ -225,7 +225,6 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
 
     if (isBranch) {
       const target = labels[immediate] ?? parseIntMaybeHex(immediate);
-      console.log(target % 4)
       const offset = (target - address) / 4
       return {
         original: line,

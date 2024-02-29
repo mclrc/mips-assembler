@@ -34,7 +34,6 @@ function App() {
   const assembled = useMemo(() => {
     try {
       const result = assemble(code, startAddress)
-      console.log(result)
       if (result === null) {
         setError("Failed to assemble")
         return []
