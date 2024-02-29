@@ -49,14 +49,12 @@ function App() {
   }, [code, startAddress])
 
   return (
-    <div className="App">
+    <div className="App" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
       <p>MIPS Assembler</p>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ display: "flex" }}>
-          <span>Startaddresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
-        </div>
-        <textarea value={code} onChange={(e) => setCode(e.target.value)} style={{ resize: "vertical", width: "100%", minHeight: 300 }} />
+      <div style={{ display: "flex" }}>
+        <span>Startaddresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
       </div>
+      <textarea value={code} onChange={(e) => setCode(e.target.value)} style={{ resize: "vertical", width: "100%", minHeight: 300 }} />
       <table>
         <tbody>
           {assembled && assembled.map((line, i) => line === null ? (
@@ -79,7 +77,9 @@ function App() {
         </tbody>
       </table>
       {error && <p style={{ color: "red" }}>{error}</p>}
+      <a style={{ marginTop: "2rem" }} href="https://github.com/mclrc/mips-assembler">Source code</a>
     </div>
+
   )
 }
 
