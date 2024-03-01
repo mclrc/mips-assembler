@@ -143,6 +143,7 @@ const assembleJType = (line: string, { labels, address }: Context): JType | null
   if (!Object.keys(JTYPE).includes(name))
     return null;
 
+  console.log(labels, labels[label]);
   const target = labels[label] ?? parseIntMaybeHex(label)
 
   return {
@@ -215,7 +216,7 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
 
     if (isBranch) {
       const target = labels[immediate] ?? parseIntMaybeHex(immediate);
-      const offset = (target - address) / 4
+      const offset = (target - (address + 4)) / 4
       return {
         original: line,
         type: 'I',
@@ -290,7 +291,7 @@ export const assemble = (code: string, startingAddressHex: string) => {
   let numLabels = 0;
   lines.forEach((line, idx) => {
     if (line.endsWith(':')) {
-      labels[line.slice(0, -1)] = startingAddress + (idx - numLabels - 1) * 4
+      labels[line.slice(0, -1)] = startingAddress + (idx - numLabels) * 4
       numLabels++
     }
   })
