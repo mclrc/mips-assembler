@@ -91,8 +91,8 @@ const assembleRegister = (name: string) => {
   if (name === undefined)
     return 0;
 
-  if (/^\$\d+$/.test(name))
-    return parseInt(name.slice(1), 10)
+  if (/^\d+$/.test(name))
+    return parseInt(name, 10)
 
   const match = name.match(/([a-zA-Z]+)(\d*)/)
 
