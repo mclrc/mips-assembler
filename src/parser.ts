@@ -53,13 +53,13 @@ const ITYPE = {
 
 const COMMAND_SCHEMAS = {
   RTYPE: new RegExp(
-    `(${Object.keys(RTYPE)})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
+    `(${Object.keys(RTYPE).join('|')})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
   ),
   ITYPE1: new RegExp(
-    `(${Object.keys(ITYPE)})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
+    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
   ),
   ITYPE2: new RegExp(
-    `(${Object.keys(ITYPE)})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`
+    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`
   ),
 };
 
