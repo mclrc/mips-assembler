@@ -197,8 +197,8 @@ const assembleRType = (line: string, { address }: Context): RType | null => {
 
 const assembleIType = (line: string, { address, labels }: Context): IType | null => {
   const names = Object.keys(ITYPE).join('|')
-  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(\\w+)$`)
-  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(\\w+)?(:?\\(\\$(\\w+)\\))?$`)
+  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(\-?\w+)$`)
+  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`)
 
   const matchA = line.match(schemaA)
   const matchB = line.match(schemaB)
