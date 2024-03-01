@@ -52,7 +52,6 @@ function App() {
         <span>Startadresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
       </div>
       <textarea value={code} onChange={(e) => setCode(e.target.value)} style={{ resize: "vertical", width: "100%", minHeight: 300 }} />
-      <p style={{ color: "red" }}>Achtung: Negative Immediates fuehren zu falschem hex</p>
       <table>
         <tbody>
           {assembled && assembled.map((line, i) => line === null ? (
