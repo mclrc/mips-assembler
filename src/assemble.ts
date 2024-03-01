@@ -166,8 +166,8 @@ const assembleJType = (line: string, { labels, address }: Context): JType | null
 
 const assembleRType = (line: string, { address }: Context): RType | null => {
   const names = Object.keys(RTYPE).join('|')
-  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+\\$(\\w+)`)
-  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+(\\d+)`)
+  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+\\$(\\w+)$`)
+  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+(\\d+)$`)
 
   const matchA = line.match(schemaA)
   const matchB = line.match(schemaB)
@@ -206,8 +206,8 @@ const assembleRType = (line: string, { address }: Context): RType | null => {
 
 const assembleIType = (line: string, { address, labels }: Context): IType | null => {
   const names = Object.keys(ITYPE).join('|')
-  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(\\w+)`)
-  const schemaB = new RegExp(`(${names})\\s+\\s+(\\w+)\\(\\$(\\w+)\\)`)
+  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(\\w+)$`)
+  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(\\w+)?(:?\\(\\$(\\w+)\\))?$`)
 
   const matchA = line.match(schemaA)
   const matchB = line.match(schemaB)
@@ -248,7 +248,7 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
     }
   }
   if (matchB) {
-    const [, name, rt, immediate, rs] = matchB
+    const [, name, rt, immediate = "0", rs] = matchB
     return {
       original: line,
       type: 'I',
@@ -263,20 +263,32 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
   return null;
 }
 
-// Fuck JS, everything is a fucking float
+const toTwosComplementHex = (num: number, width = 8) => {
+  if (num >= 0) {
+    return num.toString(16).padStart(width, '0');
+  } else {
+    return (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
+  }
+}
+
 const assembleToHex = (instruction: RType | IType | JType) => {
   if (instruction.type === 'R') {
     const { opcode, rs, rt, rd, shamt, funct } = instruction
-    return `0x${opcode.toString(16).padStart(2, '0')}${rs.toString(16).padStart(2, '0')}${rt.toString(16).padStart(2, '0')}${rd.toString(16).padStart(2, '0')}${shamt.toString(16).padStart(2, '0')}${funct.toString(16).padStart(2, '0')}`
+    return toTwosComplementHex((opcode << 26) | (rs << 21) | (rt << 16) | (rd << 11) | (shamt << 6) | funct)
   }
+
   if (instruction.type === 'I') {
     const { opcode, rs, rt, immediate } = instruction
-    return `0x${opcode.toString(16).padStart(2, '0')}${rs.toString(16).padStart(2, '0')}${rt.toString(16).padStart(2, '0')}${immediate.toString(16).padStart(4, '0')}`
+    const immediateNormalized = parseInt(toTwosComplementHex(immediate, 4), 16)
+    return toTwosComplementHex((opcode << 26) | (rs << 21) | (rt << 16) | immediateNormalized)
   }
+
   if (instruction.type === 'J') {
     const { opcode, target } = instruction
-    return `0x${opcode.toString(16).padStart(2, '0')}${target.toString(16).padStart(7, '0')}`
+    return toTwosComplementHex((opcode << 26) | (target & 0x3FFFFFF))
   }
+
+  throw Error(`Invalid instruction type: ${instruction}`)
 }
 
 const assembleLine = (line: string, address: Context) =>

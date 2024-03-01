@@ -24,7 +24,6 @@ sb $a2, 0($a1)
 beqz $a2, L2
 `
 
-// Should only contain a basic text area for he MIPS code
 function App() {
   const [startAddress, setStartAddress] = useState("0")
   const [code, setCode] = useState(exampleCode)
@@ -50,9 +49,10 @@ function App() {
     <div className="App" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
       <p>MIPS Assembler</p>
       <div style={{ display: "flex" }}>
-        <span>Startaddresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
+        <span>Startadresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
       </div>
       <textarea value={code} onChange={(e) => setCode(e.target.value)} style={{ resize: "vertical", width: "100%", minHeight: 300 }} />
+      <p style={{ color: "red" }}>Achtung: Negative Immediates fuehren zu falschem hex</p>
       <table>
         <tbody>
           {assembled && assembled.map((line, i) => line === null ? (
@@ -66,6 +66,9 @@ function App() {
               </td>
               <td>
                 {line.original}
+              </td>
+              <td>
+                {`hex=0x${line.hex}`}
               </td>
               {Object.entries(omit(line, "address", "original", "hex")).map(([key, value]) => (
                 <td key={key} style={{ marginRight: "1rem" }}>{`${key}=${value}`}</td>
