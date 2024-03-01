@@ -56,6 +56,7 @@ type InstructionBase = {
   opcode: number;
   address: number;
 }
+
 type RType = InstructionBase & {
   type: 'R',
   opcode: 0,
@@ -84,24 +85,20 @@ type Context = {
   address: number
 }
 
-const parseIntMaybeHex = (str: string) => {
-  if (str.startsWith("0x")) {
-    return parseInt(str, 16)
-  }
-  return parseInt(str, 10)
-}
+const parseIntMaybeHex = (str: string) => str.startsWith("0x") ? parseInt(str, 16) : parseInt(str, 10)
 
 const assembleRegister = (name: string) => {
-  if (name === undefined) {
+  if (name === undefined)
     return 0;
-  }
-  if (/^\$\d+$/.test(name)) {
+
+  if (/^\$\d+$/.test(name))
     return parseInt(name.slice(1), 10)
-  }
+
   const match = name.match(/([a-zA-Z]+)(\d*)/)
-  if (!match) {
-    throw Error(`Invalid register name b: ${name}`)
-  }
+
+  if (!match)
+    throw Error(`Invalid register name: ${name}`)
+
   const [, prefix, numberString] = match
 
   if (numberString === "") {
@@ -114,21 +111,16 @@ const assembleRegister = (name: string) => {
       "gp": 28,
     }[prefix]
 
-    if (mapped === undefined) {
-      throw Error(`Invalid register name c: ${name}`)
-    }
+    if (mapped === undefined)
+      throw Error(`Invalid register name: ${name}`)
 
     return mapped
   }
 
   const number = parseInt(numberString, 10)
 
-  if (prefix === "t") {
-    if (number < 8) {
-      return number + 8
-    }
-    return number + 16
-  }
+  if (prefix === "t")
+    return number < 8 ? number + 8 : number + 16
 
   const offsetMap = {
     "v": 2,
@@ -139,9 +131,8 @@ const assembleRegister = (name: string) => {
 
   const offset = offsetMap[prefix]
 
-  if (offset === undefined) {
+  if (offset === undefined)
     throw Error(`Invalid register name: ${name}`)
-  }
 
   return offset + number
 }
@@ -149,9 +140,8 @@ const assembleRegister = (name: string) => {
 const assembleJType = (line: string, { labels, address }: Context): JType | null => {
   const [name, label] = line.split(' ')
 
-  if (!Object.keys(JTYPE).includes(name)) {
+  if (!Object.keys(JTYPE).includes(name))
     return null;
-  }
 
   const target = labels[label] ?? parseIntMaybeHex(label)
 
@@ -186,6 +176,7 @@ const assembleRType = (line: string, { address }: Context): RType | null => {
       address,
     }
   }
+
   if (matchB) {
     const [, name, rd, rs, immediate] = matchB
     return {
@@ -214,9 +205,8 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
 
   const name = matchA?.[1] ?? matchB?.[1];
 
-  if (!name) {
+  if (!name)
     return null;
-  };
 
   const isBranch = Object.keys(BRANCH).includes(name);
 
@@ -263,13 +253,10 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
   return null;
 }
 
-const toTwosComplementHex = (num: number, width = 8) => {
-  if (num >= 0) {
-    return num.toString(16).padStart(width, '0');
-  } else {
-    return (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
-  }
-}
+const toTwosComplementHex = (num: number, width = 8) =>
+  num >= 0
+    ? num.toString(16).padStart(width, '0')
+    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
 
 const assembleToHex = (instruction: RType | IType | JType) => {
   if (instruction.type === 'R') {
@@ -309,13 +296,14 @@ export const assemble = (code: string, startingAddressHex: string) => {
 
   const context = { labels, startingAddress }
 
-  const info = lines.filter((line) => !line.endsWith(":")).map((line, idx) => assembleLine(line, {
-    ...context,
-    address: startingAddress + 4 * idx
-  }))
-
-  return info.map(line => line === null ? null : ({
-    ...line,
-    hex: assembleToHex(line)
-  }))
+  return lines
+    .filter((line) => !line.endsWith(":"))
+    .map((line, idx) => assembleLine(line, {
+      ...context,
+      address: startingAddress + 4 * idx
+    }))
+    .map(line => line === null ? null : ({
+      ...line,
+      hex: assembleToHex(line)
+    }))
 }
