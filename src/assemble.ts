@@ -197,7 +197,7 @@ const assembleRType = (line: string, { address }: Context): RType | null => {
 
 const assembleIType = (line: string, { address, labels }: Context): IType | null => {
   const names = Object.keys(ITYPE).join('|')
-  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(\-?\w+)$`)
+  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`)
   const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`)
 
   const matchA = line.match(schemaA)
@@ -286,13 +286,14 @@ export const assemble = (code: string, startingAddressHex: string) => {
 
   const startingAddress = parseIntMaybeHex(startingAddressHex)
 
-  const labels = lines.reduce((acc, line, idx) => {
+  const labels = {}
+  let numLabels = 0;
+  lines.forEach((line, idx) => {
     if (line.endsWith(':')) {
-      acc[line.slice(0, -1)] = startingAddress + (idx - acc.numLabels - 1) * 4
-      acc.numLabels++
+      labels[line.slice(0, -1)] = startingAddress + (idx - numLabels - 1) * 4
+      numLabels++
     }
-    return acc
-  }, { numLabels: 0 });
+  })
 
   const context = { labels, startingAddress }
 
