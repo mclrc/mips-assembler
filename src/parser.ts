@@ -70,7 +70,7 @@ type InstructionBase = {
   hex: string;
 };
 
-type RType = InstructionBase & {
+export type RType = InstructionBase & {
   type: 'R';
   opcode: 0;
   rs: number;
@@ -80,17 +80,19 @@ type RType = InstructionBase & {
   funct: number;
 };
 
-type IType = InstructionBase & {
+export type IType = InstructionBase & {
   type: 'I';
   rs: number;
   rt: number;
   immediate: number;
 };
 
-type JType = InstructionBase & {
+export type JType = InstructionBase & {
   type: 'J';
   target: number;
 };
+
+export type Instruction = RType | IType | JType;
 
 type Context = {
   labels: Record<string, number>;

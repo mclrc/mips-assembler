@@ -1,0 +1,61 @@
+#App {
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-bottom: 2rem;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: normal;
+}
+
+table {
+  margin-top: 1rem;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+tr:nth-child(even) {
+  background-color: #222224;
+}
+
+td, th {
+  text-align: left;
+  padding: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+span.label {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+textarea, input[type="text"] {
+  border: none;
+  border-radius: 5px;
+  color: #ddd;
+  outline: none;
+  padding: 10px;
+  background-color: #222224;
+}
+
+textarea {
+  resize: vertical;
+  width: 100%;
+  min-height: 300px;
+}
+
+a {
+  margin-top: 2rem;
+  align-self: center;
+  color: #aaa;
+}

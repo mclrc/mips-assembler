@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useState } from 'react';
-import { parse } from './parser';
-import { omit } from 'lodash-es';
+import { IType, Instruction, JType, RType, parse } from './parser';
+import './App.css';
 
 const exampleCode = `L0:
 ori $a0, $a0, 16384
@@ -22,6 +22,83 @@ ori $a2, $a2, 42
 sb $a2, 0($a1)
 beqz $a2, L2
 `;
+
+const formatHex = (n: number | string, length?: number) => {
+  const hex = n.toString(16);
+  return length === undefined ? `0x${hex}` : `0x${hex.padStart(length, '0')}`;
+};
+
+const RTypeInstruction = ({
+  address,
+  hex,
+  original,
+  opcode,
+  rs,
+  rt,
+  rd,
+  shamt,
+  funct,
+}: RType) => (
+  <tr className="instruction rtype">
+    <td>{formatHex(address)}</td>
+    <td>{original}</td>
+    <td>{formatHex(hex, 8)}</td>
+    <td>
+      {opcode}({funct})
+    </td>
+    <td>rs={rs}</td>
+    <td>rs={rt}</td>
+    <td>rd={rd}</td>
+    <td>shamt={shamt}</td>
+  </tr>
+);
+
+const ITypeInstruction = ({
+  address,
+  hex,
+  original,
+  opcode,
+  rs,
+  rt,
+  immediate,
+}: IType) => (
+  <tr className="instruction itype">
+    <td>{formatHex(address)}</td>
+    <td>{original}</td>
+    <td>{formatHex(hex, 8)}</td>
+    <td>{opcode}</td>
+    <td>rs={rs}</td>
+    <td>rt={rt}</td>
+    <td colSpan={2}>imm={immediate}</td>
+  </tr>
+);
+
+const JTypeInstruction = ({
+  address,
+  original,
+  hex,
+  opcode,
+  target,
+}: JType) => (
+  <tr className="instruction jtype">
+    <td>{formatHex(address)}</td>
+    <td>{original}</td>
+    <td>{formatHex(hex, 8)}</td>
+    <td>{opcode}</td>
+    <td colSpan={4}>target={target}</td>
+  </tr>
+);
+
+const InstructionInfo = ({ instruction }: { instruction: Instruction }) => {
+  switch (instruction.type) {
+    case 'R':
+      return <RTypeInstruction {...instruction} />;
+    case 'I':
+      return <ITypeInstruction {...instruction} />;
+    case 'J':
+      return <JTypeInstruction {...instruction} />;
+  }
+};
 
 function App() {
   const [startAddress, setStartAddress] = useState('0');
@@ -45,62 +122,41 @@ function App() {
   }, [code, startAddress]);
 
   return (
-    <div
-      className="App"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'stretch',
-      }}
-    >
-      <p>MIPS Assembler</p>
-      <div style={{ display: 'flex' }}>
-        <span>Startadresse</span>
-        <input
-          type="text"
-          value={startAddress}
-          onChange={(e) => setStartAddress(e.target.value)}
-          style={{ flex: 1, marginLeft: '1rem' }}
-        />
-      </div>
-      <textarea
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        style={{ resize: 'vertical', width: '100%', minHeight: 300 }}
+    <div id="App">
+      <h1>MIPS Assembler</h1>
+      <h2>Assemble and inspect a subset of MIPS assembly</h2>
+      <span className="label">Starting address</span>
+      <input
+        type="text"
+        value={startAddress}
+        onChange={(e) => setStartAddress(e.target.value)}
       />
+      <span className="label">Code</span>
+      <textarea value={code} onChange={(e) => setCode(e.target.value)} />
       <table>
+        <thead>
+          <tr>
+            <th>Addr</th>
+            <th>Asm</th>
+            <th>Hex</th>
+            <th>Op(funct)</th>
+          </tr>
+        </thead>
         <tbody>
           {assembled &&
             assembled.map((line, i) =>
               line === null ? (
-                <tr key={i}>
+                <tr key={i} className="error-row">
                   <td>Parsing error</td>
                 </tr>
               ) : (
-                <tr key={i}>
-                  <td>{`0x${line.address.toString(16).padStart(8, '0')}`}</td>
-                  <td>{line.original}</td>
-                  <td>{`hex=0x${line.hex}`}</td>
-                  {Object.entries(omit(line, 'address', 'original', 'hex')).map(
-                    ([key, value]) => (
-                      <td
-                        key={key}
-                        style={{ marginRight: '1rem' }}
-                      >{`${key}=${value}`}</td>
-                    )
-                  )}
-                </tr>
+                <InstructionInfo key={i} instruction={line} />
               )
             )}
         </tbody>
       </table>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <a
-        style={{ marginTop: '2rem' }}
-        href="https://github.com/mclrc/mips-assembler"
-      >
-        Source code
-      </a>
+      {error && <p className="error">{error}</p>}
+      <a href="https://github.com/mclrc/mips-assembler">Source code</a>
     </div>
   );
 }
