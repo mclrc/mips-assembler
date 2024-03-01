@@ -45,6 +45,9 @@ function App() {
     }
   }, [code, startAddress])
 
+  // Log all hex codes for non-null lines
+  console.log(assembled?.filter((line) => line !== null).map((line) => line.hex))
+
   return (
     <div className="App" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
       <p>MIPS Assembler</p>

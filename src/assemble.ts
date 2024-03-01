@@ -52,9 +52,10 @@ const ITYPE = {
 }
 
 type InstructionBase = {
-  original: string;
-  opcode: number;
-  address: number;
+  original: string,
+  opcode: number,
+  address: number,
+  hex: string,
 }
 
 type RType = InstructionBase & {
@@ -89,7 +90,7 @@ const parseIntMaybeHex = (str: string) => str.startsWith("0x") ? parseInt(str, 1
 
 const assembleRegister = (name: string) => {
   if (name === undefined)
-    return 0;
+    return 0
 
   if (/^\d+$/.test(name))
     return parseInt(name, 10)
@@ -141,9 +142,8 @@ const assembleJType = (line: string, { labels, address }: Context): JType | null
   const [name, label] = line.split(' ')
 
   if (!Object.keys(JTYPE).includes(name))
-    return null;
+    return null
 
-  console.log(labels, labels[label]);
   const target = labels[label] ?? parseIntMaybeHex(label)
 
   return {
@@ -151,52 +151,43 @@ const assembleJType = (line: string, { labels, address }: Context): JType | null
     type: 'J',
     opcode: JTYPE[name],
     address,
-    target
+    target,
+    hex: getJTypeHex({ opcode: JTYPE[name], target })
   }
 }
 
 const assembleRType = (line: string, { address }: Context): RType | null => {
   const names = Object.keys(RTYPE).join('|')
-  const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+\\$(\\w+)$`)
-  const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+\\$(\\w+),\\s+(\\d+)$`)
+  const schema = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`)
 
-  const matchA = line.match(schemaA)
-  const matchB = line.match(schemaB)
+  const match = line.match(schema)
 
-  if (matchA) {
-    const [, name, rd, rs, rt] = matchA
-    return {
-      original: line,
-      type: 'R',
-      opcode: 0,
-      rs: assembleRegister(rs),
-      rt: assembleRegister(rt),
-      rd: assembleRegister(rd),
-      shamt: 0,
-      funct: RTYPE[name],
-      address,
-    }
+  if (match === null)
+    return null
+
+  const [, name, rdString, rsString, rtString, shamtString] = match
+
+  const [rd, rs, rt] = [rdString, rsString, rtString].map(assembleRegister)
+
+  const shamt = shamtString ? parseIntMaybeHex(shamtString) : 0
+
+  const funct = RTYPE[name]
+
+  return {
+    original: line,
+    type: 'R' as const,
+    opcode: 0 as const,
+    rs,
+    rt,
+    rd,
+    shamt,
+    funct,
+    address,
+    hex: getRTypeHex({ rs, rt, rd, shamt, funct })
   }
-
-  if (matchB) {
-    const [, name, rd, rs, immediate] = matchB
-    return {
-      original: line,
-      type: 'R',
-      opcode: 0,
-      rs: assembleRegister(rs),
-      rt: assembleRegister(rd),
-      rd: 0,
-      shamt: parseIntMaybeHex(immediate),
-      funct: RTYPE[name],
-      address,
-    }
-  }
-
-  return null;
 }
 
-const assembleIType = (line: string, { address, labels }: Context): IType | null => {
+const parseITypeSchemas = (line: string) => {
   const names = Object.keys(ITYPE).join('|')
   const schemaA = new RegExp(`(${names})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`)
   const schemaB = new RegExp(`(${names})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`)
@@ -204,79 +195,68 @@ const assembleIType = (line: string, { address, labels }: Context): IType | null
   const matchA = line.match(schemaA)
   const matchB = line.match(schemaB)
 
-  const name = matchA?.[1] ?? matchB?.[1];
-
-  if (!name)
-    return null;
-
-  const isBranch = Object.keys(BRANCH).includes(name);
-
   if (matchA) {
     const [, name, rt, rs, immediate] = matchA
-
-    if (isBranch) {
-      const target = labels[immediate] ?? parseIntMaybeHex(immediate);
-      const offset = (target - (address + 4)) / 4
-      return {
-        original: line,
-        type: 'I',
-        opcode: ITYPE[name],
-        rs: assembleRegister(rs),
-        rt: assembleRegister(rt),
-        immediate: offset,
-        address,
-      }
-    }
-
-    return {
-      original: line,
-      type: 'I',
-      opcode: ITYPE[name],
-      rs: assembleRegister(rs),
-      rt: assembleRegister(rt),
-      immediate: parseIntMaybeHex(immediate),
-      address,
-    }
-  }
-  if (matchB) {
+    return { name, rt, rs, immediate }
+  } else if (matchB) {
     const [, name, rt, immediate = "0", rs] = matchB
-    return {
-      original: line,
-      type: 'I',
-      opcode: ITYPE[name],
-      rs: assembleRegister(rs),
-      rt: assembleRegister(rt),
-      immediate: parseIntMaybeHex(immediate),
-      address,
-    }
+    return { name, rt, immediate, rs }
   }
 
-  return null;
+  return null
+}
+
+const assembleIType = (line: string, { address, labels }: Context): IType | null => {
+  const parsedSchema = parseITypeSchemas(line)
+
+  if (parsedSchema === null)
+    return null
+
+  const { name, rt: rtString, rs: rsString, immediate: immediateString } = parsedSchema
+
+  const opcode = ITYPE[name]
+
+  const isBranch = Object.keys(BRANCH).includes(name)
+
+  const branchOffset = (labels[immediateString] ?? parseIntMaybeHex(immediateString)) - (address + 4) / 4
+
+  const immediate = isBranch ? branchOffset : parseIntMaybeHex(immediateString)
+
+  const rt = assembleRegister(rtString)
+  const rs = assembleRegister(rsString)
+
+  return {
+    type: 'I' as const,
+    original: line,
+    opcode,
+    address,
+    rs,
+    rt,
+    immediate,
+    hex: getITypeHex({ opcode, rs, rt, immediate })
+  }
 }
 
 const toTwosComplementHex = (num: number, width = 8) =>
   num >= 0
     ? num.toString(16).padStart(width, '0')
-    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
+    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0')
 
-const assembleToHex = (instruction: RType | IType | JType) => {
-  if (instruction.type === 'R') {
-    const { opcode, rs, rt, rd, shamt, funct } = instruction
-    return toTwosComplementHex((opcode << 26) | (rs << 21) | (rt << 16) | (rd << 11) | (shamt << 6) | funct)
-  }
+const getITypeHex = (instruction: Pick<IType, "opcode" | "rs" | "rt" | "immediate">) => {
+  const { opcode, rs, rt, immediate } = instruction
+  const immediateNormalized = parseInt(toTwosComplementHex(immediate, 4), 16)
+  return toTwosComplementHex((opcode << 26) | (rs << 21) | (rt << 16) | immediateNormalized)
+}
 
-  if (instruction.type === 'I') {
-    const { opcode, rs, rt, immediate } = instruction
-    const immediateNormalized = parseInt(toTwosComplementHex(immediate, 4), 16)
-    return toTwosComplementHex((opcode << 26) | (rs << 21) | (rt << 16) | immediateNormalized)
-  }
+const getRTypeHex = (instruction: Pick<RType, "rs" | "rt" | "rd" | "shamt" | "funct">) => {
+  const { rs, rt, rd, shamt, funct } = instruction
+  const shamtNormalized = parseInt(toTwosComplementHex(shamt, 5), 16)
+  return toTwosComplementHex((rs << 21) | (rt << 16) | (rd << 11) | (shamtNormalized << 6) | funct)
+}
 
-  if (instruction.type === 'J') {
-    const { opcode, target } = instruction
-    return toTwosComplementHex((opcode << 26) | (target & 0x3FFFFFF))
-  }
-
-  throw Error(`Invalid instruction type: ${instruction}`)
+const getJTypeHex = (instruction: Pick<JType, "opcode" | "target">) => {
+  const { opcode, target } = instruction
+  return toTwosComplementHex((opcode << 26) | (target & 0x3FFFFFF))
 }
 
 const assembleLine = (line: string, address: Context) =>
@@ -288,7 +268,7 @@ export const assemble = (code: string, startingAddressHex: string) => {
   const startingAddress = parseIntMaybeHex(startingAddressHex)
 
   const labels = {}
-  let numLabels = 0;
+  let numLabels = 0
   lines.forEach((line, idx) => {
     if (line.endsWith(':')) {
       labels[line.slice(0, -1)] = startingAddress + (idx - numLabels) * 4
@@ -296,16 +276,12 @@ export const assemble = (code: string, startingAddressHex: string) => {
     }
   })
 
-  const context = { labels, startingAddress }
+  const globalContext = { labels, startingAddress }
 
   return lines
     .filter((line) => !line.endsWith(":"))
     .map((line, idx) => assembleLine(line, {
-      ...context,
+      ...globalContext,
       address: startingAddress + 4 * idx
-    }))
-    .map(line => line === null ? null : ({
-      ...line,
-      hex: assembleToHex(line)
     }))
 }
