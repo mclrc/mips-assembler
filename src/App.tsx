@@ -1,10 +1,9 @@
-import React, { useMemo } from 'react'
-import { useState } from 'react'
-import { assemble } from './assemble'
-import { omit } from 'lodash-es'
+import React, { useMemo } from 'react';
+import { useState } from 'react';
+import { parse } from './parser';
+import { omit } from 'lodash-es';
 
-const exampleCode =
-  `L0:
+const exampleCode = `L0:
 ori $a0, $a0, 16384
 lui $a1, 46080
 ori $a1, $a1, 1016
@@ -22,68 +21,88 @@ lui $a2, 0
 ori $a2, $a2, 42
 sb $a2, 0($a1)
 beqz $a2, L2
-`
+`;
 
 function App() {
-  const [startAddress, setStartAddress] = useState("0")
-  const [code, setCode] = useState(exampleCode)
-  const [error, setError] = useState<string | null>(null)
+  const [startAddress, setStartAddress] = useState('0');
+  const [code, setCode] = useState(exampleCode);
+  const [error, setError] = useState<string | null>(null);
 
   const assembled = useMemo(() => {
     try {
-      const result = assemble(code, startAddress)
+      const result = parse(code, startAddress);
       if (result === null) {
-        setError("Failed to assemble")
-        return []
+        setError('Failed to assemble');
+        return [];
       }
-      setError(null)
-      return result
+      setError(null);
+      return result;
     } catch (e) {
-      setError(JSON.stringify(e))
+      setError(JSON.stringify(e));
       console.error(e);
-      return []
+      return [];
     }
-  }, [code, startAddress])
-
-  // Log all hex codes for non-null lines
-  console.log(assembled?.filter((line) => line !== null).map((line) => line.hex))
+  }, [code, startAddress]);
 
   return (
-    <div className="App" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+    <div
+      className="App"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+      }}
+    >
       <p>MIPS Assembler</p>
-      <div style={{ display: "flex" }}>
-        <span>Startadresse</span><input type="text" value={startAddress} onChange={(e) => setStartAddress(e.target.value)} style={{ flex: 1, marginLeft: "1rem" }} />
+      <div style={{ display: 'flex' }}>
+        <span>Startadresse</span>
+        <input
+          type="text"
+          value={startAddress}
+          onChange={(e) => setStartAddress(e.target.value)}
+          style={{ flex: 1, marginLeft: '1rem' }}
+        />
       </div>
-      <textarea value={code} onChange={(e) => setCode(e.target.value)} style={{ resize: "vertical", width: "100%", minHeight: 300 }} />
+      <textarea
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        style={{ resize: 'vertical', width: '100%', minHeight: 300 }}
+      />
       <table>
         <tbody>
-          {assembled && assembled.map((line, i) => line === null ? (
-            <tr>
-              <td>Parsing error</td>
-            </tr>
-          ) : (
-            <tr key={i}>
-              <td>
-                {`0x${line.address.toString(16).padStart(8, "0")}`}
-              </td>
-              <td>
-                {line.original}
-              </td>
-              <td>
-                {`hex=0x${line.hex}`}
-              </td>
-              {Object.entries(omit(line, "address", "original", "hex")).map(([key, value]) => (
-                <td key={key} style={{ marginRight: "1rem" }}>{`${key}=${value}`}</td>
-              ))}
-            </tr>
-          ))}
+          {assembled &&
+            assembled.map((line, i) =>
+              line === null ? (
+                <tr key={i}>
+                  <td>Parsing error</td>
+                </tr>
+              ) : (
+                <tr key={i}>
+                  <td>{`0x${line.address.toString(16).padStart(8, '0')}`}</td>
+                  <td>{line.original}</td>
+                  <td>{`hex=0x${line.hex}`}</td>
+                  {Object.entries(omit(line, 'address', 'original', 'hex')).map(
+                    ([key, value]) => (
+                      <td
+                        key={key}
+                        style={{ marginRight: '1rem' }}
+                      >{`${key}=${value}`}</td>
+                    )
+                  )}
+                </tr>
+              )
+            )}
         </tbody>
       </table>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <a style={{ marginTop: "2rem" }} href="https://github.com/mclrc/mips-assembler">Source code</a>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <a
+        style={{ marginTop: '2rem' }}
+        href="https://github.com/mclrc/mips-assembler"
+      >
+        Source code
+      </a>
     </div>
-
-  )
+  );
 }
 
-export default App
+export default App;
