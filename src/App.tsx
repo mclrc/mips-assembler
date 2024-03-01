@@ -3,10 +3,9 @@ import { useState } from 'react';
 import { IType, Instruction, JType, RType, parse } from './parser';
 import './App.css';
 
-const exampleCode = `L0:
+const EXAMPLE_CODE = `L0:
 ori $a0, $a0, 16384
 lui $a1, 46080
-ori $a1, $a1, 1016
 L1:
 lb $a2, 0($a0)
 beq $zero, $a2, L2
@@ -15,10 +14,7 @@ sb $a2, 0($a1)
 j L1
 L2:
 sll $zero, $zero, $zero
-lui $a1, 49087
 ori $a1, $a1, 4
-lui $a2, 0
-ori $a2, $a2, 42
 sb $a2, 0($a1)
 beqz $a2, L2
 `;
@@ -102,7 +98,7 @@ const InstructionInfo = ({ instruction }: { instruction: Instruction }) => {
 
 function App() {
   const [startAddress, setStartAddress] = useState('0');
-  const [code, setCode] = useState(exampleCode);
+  const [code, setCode] = useState(EXAMPLE_CODE);
   const [error, setError] = useState<string | null>(null);
 
   const assembled = useMemo(() => {
@@ -147,7 +143,7 @@ function App() {
             assembled.map((line, i) =>
               line === null ? (
                 <tr key={i} className="error-row">
-                  <td>Parsing error</td>
+                  <td colSpan={4}>Parsing error</td>
                 </tr>
               ) : (
                 <InstructionInfo key={i} instruction={line} />

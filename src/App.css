@@ -46,12 +46,13 @@ textarea, input[type="text"] {
   outline: none;
   padding: 10px;
   background-color: #222224;
+  font-size: 1rem;
 }
 
 textarea {
   resize: vertical;
   width: 100%;
-  min-height: 300px;
+  min-height: 350px;
 }
 
 a {
