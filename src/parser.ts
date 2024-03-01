@@ -1,3 +1,42 @@
+import { range } from 'lodash-es';
+
+type InstructionBase = {
+  original: string;
+  opcode: number;
+  address: number;
+  hex: string;
+};
+
+export type RType = InstructionBase & {
+  type: 'R';
+  opcode: 0;
+  rs: number;
+  rt: number;
+  rd: number;
+  shamt: number;
+  funct: number;
+};
+
+export type IType = InstructionBase & {
+  type: 'I';
+  rs: number;
+  rt: number;
+  immediate: number;
+};
+
+export type JType = InstructionBase & {
+  type: 'J';
+  target: number;
+};
+
+export type Instruction = RType | IType | JType;
+
+type Context = {
+  labels: Record<string, number>;
+  startingAddress: number;
+  address: number;
+};
+
 const RTYPE = {
   sll: 0,
   srl: 1,
@@ -63,89 +102,40 @@ const COMMAND_SCHEMAS = {
   ),
 };
 
-type InstructionBase = {
-  original: string;
-  opcode: number;
-  address: number;
-  hex: string;
-};
+const createRegisterMappings = (
+  prefix: string,
+  offset: number,
+  count: number,
+  start: number = 0
+) =>
+  range(count).reduce(
+    (acc, i) => ({ ...acc, [`${prefix}${start + i}`]: i + offset }),
+    {}
+  );
 
-export type RType = InstructionBase & {
-  type: 'R';
-  opcode: 0;
-  rs: number;
-  rt: number;
-  rd: number;
-  shamt: number;
-  funct: number;
-};
-
-export type IType = InstructionBase & {
-  type: 'I';
-  rs: number;
-  rt: number;
-  immediate: number;
-};
-
-export type JType = InstructionBase & {
-  type: 'J';
-  target: number;
-};
-
-export type Instruction = RType | IType | JType;
-
-type Context = {
-  labels: Record<string, number>;
-  startingAddress: number;
-  address: number;
+const REGISTER_MAP = {
+  zero: 0,
+  at: 1,
+  ...createRegisterMappings('v', 2, 2),
+  ...createRegisterMappings('a', 4, 4),
+  ...createRegisterMappings('t', 8, 8),
+  ...createRegisterMappings('s', 16, 8),
+  ...createRegisterMappings('t', 24, 2, 8),
+  ...createRegisterMappings('k', 26, 2),
+  gp: 28,
+  sp: 29,
+  fp: 30,
+  ra: 31,
+  ...range(32).reduce((acc, i) => ({ ...acc, [i.toString()]: i }), {}),
 };
 
 const parseIntMaybeHex = (str: string) =>
   str.startsWith('0x') ? parseInt(str, 16) : parseInt(str, 10);
 
-const parseRegister = (name: string) => {
-  if (name === undefined) return 0;
-
-  if (/^\d+$/.test(name)) return parseInt(name, 10);
-
-  const match = name.match(/([a-zA-Z]+)(\d*)/);
-
-  if (!match) throw Error(`Invalid register name: ${name}`);
-
-  const [, prefix, numberString] = match;
-
-  if (numberString === '') {
-    const mapped = {
-      zero: 0,
-      at: 1,
-      sp: 29,
-      fp: 30,
-      ra: 31,
-      gp: 28,
-    }[prefix];
-
-    if (mapped === undefined) throw Error(`Invalid register name: ${name}`);
-
-    return mapped;
-  }
-
-  const number = parseInt(numberString, 10);
-
-  if (prefix === 't') return number < 8 ? number + 8 : number + 16;
-
-  const offsetMap = {
-    v: 2,
-    a: 4,
-    t: 8,
-    s: 16,
-  };
-
-  const offset = offsetMap[prefix];
-
-  if (offset === undefined) throw Error(`Invalid register name: ${name}`);
-
-  return offset + number;
-};
+const toTwosComplementHex = (num: number, width = 8) =>
+  num >= 0
+    ? num.toString(16).padStart(width, '0')
+    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
 
 const parseJType = (
   line: string,
@@ -167,6 +157,11 @@ const parseJType = (
   };
 };
 
+const calcJTypeHex = (instruction: Pick<JType, 'opcode' | 'target'>) => {
+  const { opcode, target } = instruction;
+  return toTwosComplementHex((opcode << 26) | (target & 0x3ffffff));
+};
+
 const parseRType = (line: string, { address }: Context): RType | null => {
   const match = line.match(COMMAND_SCHEMAS.RTYPE);
 
@@ -174,7 +169,9 @@ const parseRType = (line: string, { address }: Context): RType | null => {
 
   const [, name, rdString, rsString, rtString, shamtString] = match;
 
-  const [rd, rs, rt] = [rdString, rsString, rtString].map(parseRegister);
+  const [rd, rs, rt] = [rdString, rsString, rtString].map(
+    (reg) => REGISTER_MAP[reg] ?? 0
+  );
 
   const shamt = shamtString ? parseIntMaybeHex(shamtString) : 0;
 
@@ -192,6 +189,16 @@ const parseRType = (line: string, { address }: Context): RType | null => {
     address,
     hex: calcRTypeHex({ rs, rt, rd, shamt, funct }),
   };
+};
+
+const calcRTypeHex = (
+  instruction: Pick<RType, 'rs' | 'rt' | 'rd' | 'shamt' | 'funct'>
+) => {
+  const { rs, rt, rd, shamt, funct } = instruction;
+  const shamtNormalized = parseInt(toTwosComplementHex(shamt, 5), 16);
+  return toTwosComplementHex(
+    (rs << 21) | (rt << 16) | (rd << 11) | (shamtNormalized << 6) | funct
+  );
 };
 
 const parseITypeSchemas = (line: string) => {
@@ -234,8 +241,8 @@ const parseIType = (
 
   const immediate = isBranch ? branchOffset : parseIntMaybeHex(immediateString);
 
-  const rt = parseRegister(rtString);
-  const rs = parseRegister(rsString);
+  const rt = REGISTER_MAP[rtString] ?? 0;
+  const rs = REGISTER_MAP[rsString] ?? 0;
 
   return {
     type: 'I' as const,
@@ -249,11 +256,6 @@ const parseIType = (
   };
 };
 
-const toTwosComplementHex = (num: number, width = 8) =>
-  num >= 0
-    ? num.toString(16).padStart(width, '0')
-    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
-
 const calcITypeHex = (
   instruction: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>
 ) => {
@@ -262,21 +264,6 @@ const calcITypeHex = (
   return toTwosComplementHex(
     (opcode << 26) | (rs << 21) | (rt << 16) | immediateNormalized
   );
-};
-
-const calcRTypeHex = (
-  instruction: Pick<RType, 'rs' | 'rt' | 'rd' | 'shamt' | 'funct'>
-) => {
-  const { rs, rt, rd, shamt, funct } = instruction;
-  const shamtNormalized = parseInt(toTwosComplementHex(shamt, 5), 16);
-  return toTwosComplementHex(
-    (rs << 21) | (rt << 16) | (rd << 11) | (shamtNormalized << 6) | funct
-  );
-};
-
-const calcJTypeHex = (instruction: Pick<JType, 'opcode' | 'target'>) => {
-  const { opcode, target } = instruction;
-  return toTwosComplementHex((opcode << 26) | (target & 0x3ffffff));
 };
 
 const parseLine = (line: string, address: Context) =>
