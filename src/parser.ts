@@ -132,8 +132,8 @@ const REGISTER_MAP = {
 const parseIntMaybeHex = (str: string) =>
   str.startsWith('0x') ? parseInt(str, 16) : parseInt(str, 10);
 
-const to2k = (num: number, width = 8) =>
-  num >= 0 ? num : Math.pow(2, width) - 1 + num;
+export const to2k = (num: number, width = 8) =>
+  num >= 0 ? num : Math.pow(2, width) + num;
 
 const toTwosComplementHex = (num: number, width = 8) =>
   to2k(num, width * 4)
@@ -209,8 +209,8 @@ const parseITypeSchemas = (line: string) => {
   const matchB = line.match(COMMAND_SCHEMAS.ITYPE2);
 
   if (matchA) {
-    const [, name, rt, rs, immediate] = matchA;
-    return { name, rt, rs, immediate };
+    const [, name, rs, rt, immediate] = matchA;
+    return { name, rs, rt, immediate };
   } else if (matchB) {
     const [, name, rt, immediate = '0', rs] = matchB;
     return { name, rt, immediate, rs };
@@ -267,9 +267,9 @@ const calcITypeHex = (
   instruction: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>
 ) => {
   const { opcode, rs, rt, immediate } = instruction;
-  const immediateNormalized = parseInt(toTwosComplementHex(immediate, 4), 16);
+  const immediate2k = to2k(immediate, 16);
   return `0x${toTwosComplementHex(
-    (opcode << 26) | (rt << 21) | (rs << 16) | immediateNormalized
+    (opcode << 26) | (rt << 16) | (rs << 21) | immediate2k
   )}`;
 };
 

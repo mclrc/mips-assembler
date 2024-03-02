@@ -1,5 +1,14 @@
-import { parseLine } from './parser';
+import { parseLine, to2k } from './parser';
 import { test, expect } from 'vitest';
+
+test('2k', () => {
+  expect(to2k(0, 16)).toBe(0);
+  expect(to2k(1, 16)).toBe(1);
+  expect(to2k(-1, 16)).toBe(0xffff);
+  expect(to2k(0x7fff, 16)).toBe(0x7fff);
+  expect(to2k(-8, 4)).toBe(8);
+  expect(to2k(-1, 4)).toBe(15);
+});
 
 test('parseLine - add', () => {
   const line = 'add $t0, $t1, $t2';
@@ -62,7 +71,7 @@ test('parseLine - j', () => {
 test('parseLine - beq backward', () => {
   const line = 'beq $t0, $t1, L1';
   const startingAddress = 0x00400000;
-  const address = 0x0040000c;
+  const address = 0x00400010;
   const result = parseLine(line, {
     startingAddress,
     address,
@@ -73,8 +82,8 @@ test('parseLine - beq backward', () => {
     original: line,
     opcode: 4,
     address,
-    rs: 9,
-    rt: 8,
+    rs: 8,
+    rt: 9,
     immediate: 0xfffb,
     hex: '0x1109fffb',
   });
@@ -94,10 +103,10 @@ test('parseLine - beq forward', () => {
     original: line,
     opcode: 4,
     address,
-    rs: 0,
-    rt: 5,
+    rs: 5,
+    rt: 0,
     immediate: 1,
-    hex: '0x1109fffb',
+    hex: '0x10a00001',
   });
 });
 
@@ -114,6 +123,6 @@ test('parseLine - lw', () => {
     rs: 17,
     rt: 16,
     immediate: 0,
-    hex: '0x8d090000',
+    hex: '0x8e300000',
   });
 });
