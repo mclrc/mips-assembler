@@ -1,4 +1,4 @@
-import { parseLine, to2k } from './parser';
+import { parseLine, to2k } from '.';
 import { test, expect } from 'vitest';
 
 test('2k', () => {
