@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useState } from 'react';
-import { IType, Instruction, JType, RType, parse } from './parser';
+import { IType, Instruction, JType, RType, parse } from '../parser';
 import './App.css';
 
 const EXAMPLE_CODE = `L0:
@@ -19,7 +19,7 @@ sb $a2, 0($a1)
 beqz $a2, L2
 `;
 
-const formatHex = (n: number | string, length?: number) => {
+const formatHex = (n: number, length?: number) => {
   const hex = n.toString(16);
   return length === undefined ? `0x${hex}` : `0x${hex.padStart(length, '0')}`;
 };
@@ -43,7 +43,7 @@ const RTypeInstruction = ({
       {opcode}({funct})
     </td>
     <td>rs={rs}</td>
-    <td>rs={rt}</td>
+    <td>rt={rt}</td>
     <td>rd={rd}</td>
     <td>shamt={shamt}</td>
   </tr>
@@ -97,7 +97,7 @@ const InstructionInfo = ({ instruction }: { instruction: Instruction }) => {
 };
 
 function App() {
-  const [startAddress, setStartAddress] = useState('0');
+  const [startAddress, setStartAddress] = useState('0x00400000');
   const [code, setCode] = useState(EXAMPLE_CODE);
   const [error, setError] = useState<string | null>(null);
 
