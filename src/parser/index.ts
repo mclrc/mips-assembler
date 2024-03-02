@@ -92,16 +92,20 @@ const ITYPE = {
 
 const COMMAND_SCHEMAS = {
   RTYPE: new RegExp(
+    // Matches lines like `add $t0, $t1, $t2`
     `(${Object.keys(RTYPE).join('|')})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
   ),
   ITYPE1: new RegExp(
+    // Matches lines like `addi $t0, $t1, 10`, and `beq $t0, $t1, L1`
     `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
   ),
   ITYPE2: new RegExp(
+    // Matches memory instructions like `lw $t0, 10($t1)` and `sw $t0, ($t1)`
     `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
   ),
 };
 
+/// Create a part of the register map.
 const createRegisterMappings = (
   prefix: string,
   offset: number,
@@ -126,20 +130,25 @@ const REGISTER_MAP = {
   sp: 29,
   fp: 30,
   ra: 31,
+  // Also map the numbers to themselves
   ...range(32).reduce((acc, i) => ({ ...acc, [i.toString()]: i }), {}),
 };
 
+/// Parse a string to an integer, allowing for hex numbers
 const parseIntMaybeHex = (str: string) =>
   str.startsWith('0x') ? parseInt(str, 16) : parseInt(str, 10);
 
+/// Convert a number to a 2's complement representation
 export const to2k = (num: number, width = 8) =>
   num >= 0 ? num : Math.pow(2, width) + num;
 
+/// Convert a number to a 2's complement hex representation
 const toTwosComplementHex = (num: number, width = 8) =>
   to2k(num, width * 4)
     .toString(16)
     .padStart(width, '0');
 
+/// Parse a jump instruction
 const parseJType = (
   line: string,
   { labels, address }: Context
@@ -160,11 +169,13 @@ const parseJType = (
   };
 };
 
+/// Calculate the hex representation of a jump instruction
 const calcJTypeHex = (instruction: Pick<JType, 'opcode' | 'target'>) => {
   const { opcode, target } = instruction;
   return `0x${toTwosComplementHex((opcode << 26) | ((target & 0x3ffffff) >> 2))}`;
 };
 
+/// Parse an R type instruction
 const parseRType = (line: string, { address }: Context): RType | null => {
   const match = line.match(COMMAND_SCHEMAS.RTYPE);
 
@@ -204,6 +215,7 @@ const calcRTypeHex = (
   )}`;
 };
 
+/// Parse the two possible I type schemas into a common format
 const parseITypeSchemas = (line: string) => {
   const matchA = line.match(COMMAND_SCHEMAS.ITYPE1);
   const matchB = line.match(COMMAND_SCHEMAS.ITYPE2);
@@ -219,6 +231,7 @@ const parseITypeSchemas = (line: string) => {
   return null;
 };
 
+/// Parse an I type instruction
 const parseIType = (
   line: string,
   { address, labels }: Context
@@ -238,11 +251,13 @@ const parseIType = (
 
   const isBranch = Object.keys(BRANCH).includes(name);
 
+  // If it's a branch instruction, calculate the branch offset
   const branchOffset =
     ((labels[immediateString] ?? parseIntMaybeHex(immediateString)) -
       (address + 4)) /
     4;
 
+  // Immediate might be negative, so we need to convert it to 2's complement
   const immediate = to2k(
     isBranch ? branchOffset : parseIntMaybeHex(immediateString),
     16
@@ -263,6 +278,7 @@ const parseIType = (
   };
 };
 
+/// Calculate the hex representation of an I type instruction
 const calcITypeHex = (
   instruction: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>
 ) => {
@@ -273,11 +289,13 @@ const calcITypeHex = (
   )}`;
 };
 
+/// Parse a line of code
 export const parseLine = (line: string, address: Context) =>
   parseRType(line, address) ??
   parseIType(line, address) ??
   parseJType(line, address);
 
+/// Parse a program
 export const parse = (code: string, startingAddressString: string) => {
   const lines = code
     .split('\n')
@@ -286,6 +304,7 @@ export const parse = (code: string, startingAddressString: string) => {
 
   const startingAddress = parseIntMaybeHex(startingAddressString);
 
+  // Compute the label addresses
   const labels = {};
   let numLabels = 0;
   lines.forEach((line, idx) => {

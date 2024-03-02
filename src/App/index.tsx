@@ -24,7 +24,7 @@ const formatHex = (n: number, length?: number) => {
   return length === undefined ? `0x${hex}` : `0x${hex.padStart(length, '0')}`;
 };
 
-const RTypeInstruction = ({
+const RTypeRow = ({
   address,
   hex,
   original,
@@ -49,7 +49,7 @@ const RTypeInstruction = ({
   </tr>
 );
 
-const ITypeInstruction = ({
+const ITypeRow = ({
   address,
   hex,
   original,
@@ -69,13 +69,7 @@ const ITypeInstruction = ({
   </tr>
 );
 
-const JTypeInstruction = ({
-  address,
-  original,
-  hex,
-  opcode,
-  target,
-}: JType) => (
+const JTypeRow = ({ address, original, hex, opcode, target }: JType) => (
   <tr className="instruction jtype">
     <td>{formatHex(address)}</td>
     <td>{original}</td>
@@ -85,14 +79,14 @@ const JTypeInstruction = ({
   </tr>
 );
 
-const InstructionInfo = ({ instruction }: { instruction: Instruction }) => {
+const InstructionRow = ({ instruction }: { instruction: Instruction }) => {
   switch (instruction.type) {
     case 'R':
-      return <RTypeInstruction {...instruction} />;
+      return <RTypeRow {...instruction} />;
     case 'I':
-      return <ITypeInstruction {...instruction} />;
+      return <ITypeRow {...instruction} />;
     case 'J':
-      return <JTypeInstruction {...instruction} />;
+      return <JTypeRow {...instruction} />;
   }
 };
 
@@ -146,7 +140,7 @@ function App() {
                   <td colSpan={4}>Parsing error</td>
                 </tr>
               ) : (
-                <InstructionInfo key={i} instruction={line} />
+                <InstructionRow key={i} instruction={line} />
               )
             )}
         </tbody>
