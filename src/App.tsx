@@ -38,7 +38,7 @@ const RTypeInstruction = ({
   <tr className="instruction rtype">
     <td>{formatHex(address)}</td>
     <td>{original}</td>
-    <td>{formatHex(hex, 8)}</td>
+    <td>{hex}</td>
     <td>
       {opcode}({funct})
     </td>
@@ -61,7 +61,7 @@ const ITypeInstruction = ({
   <tr className="instruction itype">
     <td>{formatHex(address)}</td>
     <td>{original}</td>
-    <td>{formatHex(hex, 8)}</td>
+    <td>{hex}</td>
     <td>{opcode}</td>
     <td>rs={rs}</td>
     <td>rt={rt}</td>
@@ -79,7 +79,7 @@ const JTypeInstruction = ({
   <tr className="instruction jtype">
     <td>{formatHex(address)}</td>
     <td>{original}</td>
-    <td>{formatHex(hex, 8)}</td>
+    <td>{hex}</td>
     <td>{opcode}</td>
     <td colSpan={4}>target={target}</td>
   </tr>

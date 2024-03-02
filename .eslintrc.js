@@ -1,10 +1,6 @@
+// export default {
 module.exports = {
   parser: '@typescript-eslint/parser',
-  env: {
-    browser: true,
-    es2021: true,
-  },
-  extends: ['prettier', 'eslint:recommended', 'plugin:react/recommended'],
   parserOptions: {
     ecmaFeatures: {
       jsx: true,
@@ -12,6 +8,11 @@ module.exports = {
     ecmaVersion: 12,
     sourceType: 'module',
   },
+  env: {
+    browser: true,
+    es2021: true,
+  },
+  extends: ['prettier', 'eslint:recommended', 'plugin:react/recommended'],
   plugins: ['@typescript-eslint', 'prettier', 'react'],
   rules: {
     'prettier/prettier': ['error', { singleQuote: true, useTabs: false }],

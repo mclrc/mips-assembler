@@ -7,7 +7,7 @@ body {
   padding: 0;
   background-color: #111119;
   color: #aaa;
-  font-family: "Noto Sans Mono", monospace;
+  font-family: 'Noto Sans Mono', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

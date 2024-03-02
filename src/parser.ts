@@ -98,7 +98,7 @@ const COMMAND_SCHEMAS = {
     `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
   ),
   ITYPE2: new RegExp(
-    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(:?\\(\\$(\\w+)\\))?$`
+    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
   ),
 };
 
@@ -132,10 +132,13 @@ const REGISTER_MAP = {
 const parseIntMaybeHex = (str: string) =>
   str.startsWith('0x') ? parseInt(str, 16) : parseInt(str, 10);
 
+const to2k = (num: number, width = 8) =>
+  num >= 0 ? num : Math.pow(2, width) - 1 + num;
+
 const toTwosComplementHex = (num: number, width = 8) =>
-  num >= 0
-    ? num.toString(16).padStart(width, '0')
-    : (Math.pow(2, width * 4) + num).toString(16).padStart(width, '0');
+  to2k(num, width * 4)
+    .toString(16)
+    .padStart(width, '0');
 
 const parseJType = (
   line: string,
@@ -159,7 +162,7 @@ const parseJType = (
 
 const calcJTypeHex = (instruction: Pick<JType, 'opcode' | 'target'>) => {
   const { opcode, target } = instruction;
-  return toTwosComplementHex((opcode << 26) | (target & 0x3ffffff));
+  return `0x${toTwosComplementHex((opcode << 26) | ((target & 0x3ffffff) >> 2))}`;
 };
 
 const parseRType = (line: string, { address }: Context): RType | null => {
@@ -196,9 +199,9 @@ const calcRTypeHex = (
 ) => {
   const { rs, rt, rd, shamt, funct } = instruction;
   const shamtNormalized = parseInt(toTwosComplementHex(shamt, 5), 16);
-  return toTwosComplementHex(
+  return `0x${toTwosComplementHex(
     (rs << 21) | (rt << 16) | (rd << 11) | (shamtNormalized << 6) | funct
-  );
+  )}`;
 };
 
 const parseITypeSchemas = (line: string) => {
@@ -236,10 +239,14 @@ const parseIType = (
   const isBranch = Object.keys(BRANCH).includes(name);
 
   const branchOffset =
-    (labels[immediateString] ?? parseIntMaybeHex(immediateString)) -
-    (address + 4) / 4;
+    ((labels[immediateString] ?? parseIntMaybeHex(immediateString)) -
+      (address + 4)) /
+    4;
 
-  const immediate = isBranch ? branchOffset : parseIntMaybeHex(immediateString);
+  const immediate = to2k(
+    isBranch ? branchOffset : parseIntMaybeHex(immediateString),
+    16
+  );
 
   const rt = REGISTER_MAP[rtString] ?? 0;
   const rs = REGISTER_MAP[rsString] ?? 0;
@@ -261,12 +268,12 @@ const calcITypeHex = (
 ) => {
   const { opcode, rs, rt, immediate } = instruction;
   const immediateNormalized = parseInt(toTwosComplementHex(immediate, 4), 16);
-  return toTwosComplementHex(
-    (opcode << 26) | (rs << 21) | (rt << 16) | immediateNormalized
-  );
+  return `0x${toTwosComplementHex(
+    (opcode << 26) | (rt << 21) | (rs << 16) | immediateNormalized
+  )}`;
 };
 
-const parseLine = (line: string, address: Context) =>
+export const parseLine = (line: string, address: Context) =>
   parseRType(line, address) ??
   parseIType(line, address) ??
   parseJType(line, address);
