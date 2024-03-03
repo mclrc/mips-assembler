@@ -37,7 +37,7 @@ type Context = {
   address: number;
 };
 
-const RTYPE = {
+const RTYPE_FUNCTS = {
   sll: 0,
   srl: 1,
   jr: 8,
@@ -48,12 +48,12 @@ const RTYPE = {
   slt: 42,
 };
 
-const JTYPE = {
+const JTYPE_OPCODES = {
   j: 2,
   jal: 3,
 };
 
-const BRANCH = {
+const BRANCH_OPCODES = {
   beq: 4,
   beqz: 4,
   bne: 5,
@@ -61,7 +61,7 @@ const BRANCH = {
   bgtz: 7,
 };
 
-const MEMORY = {
+const MEMORY_OPCODES = {
   lb: 32,
   lh: 33,
   lwl: 34,
@@ -76,9 +76,8 @@ const MEMORY = {
   swr: 46,
 };
 
-const ITYPE = {
-  ...MEMORY,
-  ...BRANCH,
+const ITYPE_OPCODES = {
+  ...BRANCH_OPCODES,
   addi: 8,
   subi: 10,
   andi: 12,
@@ -93,15 +92,15 @@ const ITYPE = {
 const COMMAND_SCHEMAS = {
   RTYPE: new RegExp(
     // Matches lines like `add $t0, $t1, $t2`
-    `(${Object.keys(RTYPE).join('|')})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
+    `(${Object.keys(RTYPE_FUNCTS).join('|')})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
   ),
-  ITYPE1: new RegExp(
+  ITYPE: new RegExp(
     // Matches lines like `addi $t0, $t1, 10`, and `beq $t0, $t1, L1`
-    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
+    `(${Object.keys(ITYPE_OPCODES).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
   ),
-  ITYPE2: new RegExp(
+  ITYPE_MEMORY: new RegExp(
     // Matches memory instructions like `lw $t0, 10($t1)` and `sw $t0, ($t1)`
-    `(${Object.keys(ITYPE).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
+    `(${Object.keys(MEMORY_OPCODES).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
   ),
 };
 
@@ -155,17 +154,19 @@ const parseJType = (
 ): JType | null => {
   const [name, label] = line.split(' ');
 
-  if (!Object.keys(JTYPE).includes(name)) return null;
+  if (!Object.keys(JTYPE_OPCODES).includes(name)) return null;
 
   const target = labels[label] ?? parseIntMaybeHex(label);
+
+  const opcode = JTYPE_OPCODES[name];
 
   return {
     original: line,
     type: 'J',
-    opcode: JTYPE[name],
+    opcode,
     address,
     target,
-    hex: calcJTypeHex({ opcode: JTYPE[name], target }),
+    hex: calcJTypeHex({ opcode, target }),
   };
 };
 
@@ -187,7 +188,7 @@ const parseRType = (line: string, { address }: Context): RType | null => {
 
   const shamt = shamtString ? parseIntMaybeHex(shamtString) : 0;
 
-  const funct = RTYPE[name];
+  const funct = RTYPE_FUNCTS[name];
 
   return {
     original: line,
@@ -216,8 +217,8 @@ const calcRTypeHex = ({
 
 /// Parse the two possible I type schemas into a common format
 const parseITypeSchemas = (line: string) => {
-  const matchA = line.match(COMMAND_SCHEMAS.ITYPE1);
-  const matchB = line.match(COMMAND_SCHEMAS.ITYPE2);
+  const matchA = line.match(COMMAND_SCHEMAS.ITYPE);
+  const matchB = line.match(COMMAND_SCHEMAS.ITYPE_MEMORY);
 
   if (matchA) {
     const [, name, rs, rt, immediate] = matchA;
@@ -246,9 +247,9 @@ const parseIType = (
     immediate: immediateString,
   } = parsedSchema;
 
-  const opcode = ITYPE[name];
+  const opcode = ITYPE_OPCODES[name];
 
-  const isBranch = Object.keys(BRANCH).includes(name);
+  const isBranch = Object.keys(BRANCH_OPCODES).includes(name);
 
   // If it's a branch instruction, calculate the branch offset
   const branchOffset =
