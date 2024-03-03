@@ -143,7 +143,7 @@ export const to2k = (num: number, width = 8) =>
   num >= 0 ? num : Math.pow(2, width) + num;
 
 /// Convert a number to a 2's complement hex representation
-const toTwosComplementHex = (num: number, width = 8) =>
+const to2kHex = (num: number, width = 8) =>
   to2k(num, width * 4)
     .toString(16)
     .padStart(width, '0');
@@ -170,10 +170,8 @@ const parseJType = (
 };
 
 /// Calculate the hex representation of a jump instruction
-const calcJTypeHex = (instruction: Pick<JType, 'opcode' | 'target'>) => {
-  const { opcode, target } = instruction;
-  return `0x${toTwosComplementHex((opcode << 26) | ((target & 0x3ffffff) >> 2))}`;
-};
+const calcJTypeHex = ({ opcode, target }: Pick<JType, 'opcode' | 'target'>) =>
+  `0x${to2kHex((opcode << 26) | ((target & 0x3ffffff) >> 2))}`;
 
 /// Parse an R type instruction
 const parseRType = (line: string, { address }: Context): RType | null => {
@@ -205,15 +203,16 @@ const parseRType = (line: string, { address }: Context): RType | null => {
   };
 };
 
-const calcRTypeHex = (
-  instruction: Pick<RType, 'rs' | 'rt' | 'rd' | 'shamt' | 'funct'>
-) => {
-  const { rs, rt, rd, shamt, funct } = instruction;
-  const shamtNormalized = parseInt(toTwosComplementHex(shamt, 5), 16);
-  return `0x${toTwosComplementHex(
-    (rs << 21) | (rt << 16) | (rd << 11) | (shamtNormalized << 6) | funct
+const calcRTypeHex = ({
+  rs,
+  rt,
+  rd,
+  shamt,
+  funct,
+}: Pick<RType, 'rs' | 'rt' | 'rd' | 'shamt' | 'funct'>) =>
+  `0x${to2kHex(
+    (rs << 21) | (rt << 16) | (rd << 11) | (to2k(shamt, 5) << 6) | funct
   )}`;
-};
 
 /// Parse the two possible I type schemas into a common format
 const parseITypeSchemas = (line: string) => {
@@ -279,15 +278,13 @@ const parseIType = (
 };
 
 /// Calculate the hex representation of an I type instruction
-const calcITypeHex = (
-  instruction: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>
-) => {
-  const { opcode, rs, rt, immediate } = instruction;
-  const immediate2k = to2k(immediate, 16);
-  return `0x${toTwosComplementHex(
-    (opcode << 26) | (rt << 16) | (rs << 21) | immediate2k
-  )}`;
-};
+const calcITypeHex = ({
+  opcode,
+  rs,
+  rt,
+  immediate,
+}: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>) =>
+  `0x${to2kHex((opcode << 26) | (rt << 16) | (rs << 21) | to2k(immediate, 16))}`;
 
 /// Parse a line of code
 export const parseLine = (line: string, address: Context) =>

@@ -111,7 +111,7 @@ test('parseLine - beq forward', () => {
 });
 
 test('parseLine - lw', () => {
-  const line = 'lw $s0, 0($s1)';
+  const line = 'lw $s0, ($s1)';
   const startingAddress = 0x00400000;
   const address = 0x00400010;
   const result = parseLine(line, { startingAddress, address, labels: {} });
@@ -124,5 +124,22 @@ test('parseLine - lw', () => {
     rt: 16,
     immediate: 0,
     hex: '0x8e300000',
+  });
+});
+
+test('parseLine - sw', () => {
+  const line = 'sw $s0, 10($s1)';
+  const startingAddress = 0x00400000;
+  const address = 0x00400014;
+  const result = parseLine(line, { startingAddress, address, labels: {} });
+  expect(result).toEqual({
+    type: 'I',
+    original: line,
+    opcode: 43,
+    address,
+    rs: 17,
+    rt: 16,
+    immediate: 10,
+    hex: '0xae30000a',
   });
 });
