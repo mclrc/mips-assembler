@@ -298,7 +298,10 @@ export const parse = (code: string, startingAddressString: string) => {
   const lines = code
     .split('\n')
     .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+    .filter((l) => l.length > 0 && !l.startsWith('#'))
+    .map((l) => (l.indexOf('#') === -1 ? l : l.substring(0, l.indexOf('#'))))
+    // trim again to remove any whitespace before the comment (if comment was in same line as instruction)
+    .map((l) => l.trim());
 
   const startingAddress = parseIntMaybeHex(startingAddressString);
 
