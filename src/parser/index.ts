@@ -29,7 +29,11 @@ export type JType = InstructionBase & {
   target: number;
 };
 
-export type Instruction = RType | IType | JType;
+export type LabelLine = InstructionBase & {
+  type: 'L';
+};
+
+export type Instruction = RType | IType | JType | LabelLine | null;
 
 type Context = {
   labels: Record<string, number>;
@@ -317,7 +321,8 @@ export const parse = (code: string, startingAddressString: string) => {
 
   const globalContext = { labels, startingAddress };
 
-  return lines
+  // Parse everything that isn't a label
+  const parsedLines: Instruction[] = lines
     .filter((line) => !line.endsWith(':'))
     .map((line, idx) =>
       parseLine(line, {
@@ -325,4 +330,22 @@ export const parse = (code: string, startingAddressString: string) => {
         address: startingAddress + 4 * idx,
       })
     );
+
+  // Add back the labels at the right position
+  for (const label in labels) {
+    const address = labels[label];
+    let idx = parsedLines.findIndex((l) => l?.address === address);
+
+    if (idx === -1) idx = parsedLines.length;
+
+    parsedLines.splice(idx, 0, {
+      type: 'L',
+      original: `${label}:`,
+      address,
+      opcode: 0,
+      hex: '',
+    });
+  }
+
+  return parsedLines;
 };

@@ -1,6 +1,5 @@
-import React, { useMemo } from 'react';
-import { useState } from 'react';
-import { IType, Instruction, JType, RType, parse } from '../parser';
+import React, { useMemo, useState } from 'react';
+import { IType, JType, LabelLine, RType, parse } from '../parser';
 import './App.css';
 
 const EXAMPLE_CODE = `L0:
@@ -79,7 +78,24 @@ const JTypeRow = ({ address, original, hex, opcode, target }: JType) => (
   </tr>
 );
 
-const InstructionRow = ({ instruction }: { instruction: Instruction }) => {
+const LabelRow = ({
+  address,
+  original,
+}: {
+  address: number;
+  original: string;
+}) => (
+  <tr className="instruction">
+    <td>{formatHex(address)}</td>
+    <td colSpan={7}>{original}</td>
+  </tr>
+);
+
+const InstructionRow = ({
+  instruction,
+}: {
+  instruction: RType | IType | JType | LabelLine;
+}) => {
   switch (instruction.type) {
     case 'R':
       return <RTypeRow {...instruction} />;
@@ -87,6 +103,8 @@ const InstructionRow = ({ instruction }: { instruction: Instruction }) => {
       return <ITypeRow {...instruction} />;
     case 'J':
       return <JTypeRow {...instruction} />;
+    case 'L':
+      return <LabelRow {...instruction} />;
   }
 };
 
