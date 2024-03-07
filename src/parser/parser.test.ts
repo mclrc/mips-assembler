@@ -164,3 +164,16 @@ test('parse - line with comments', () => {
     },
   ]);
 });
+
+test('parse - label', () => {
+  const code = `L1:`;
+  const startingAddress = 0x00400000;
+  const result = parse(code, startingAddress.toString());
+  expect(result).toEqual([
+    {
+      type: 'L',
+      original: code,
+      address: startingAddress,
+    },
+  ]);
+});
