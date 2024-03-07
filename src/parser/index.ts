@@ -29,8 +29,10 @@ export type JType = InstructionBase & {
   target: number;
 };
 
-export type LabelLine = InstructionBase & {
+export type LabelLine = {
   type: 'L';
+  original: string;
+  address: number;
 };
 
 export type Instruction = RType | IType | JType | LabelLine | null;
@@ -342,8 +344,6 @@ export const parse = (code: string, startingAddressString: string) => {
       type: 'L',
       original: `${label}:`,
       address,
-      opcode: 0,
-      hex: '',
     });
   }
 
