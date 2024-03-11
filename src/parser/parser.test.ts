@@ -1,5 +1,5 @@
-import { parseLine, to2k } from '.';
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
+import { parse, parseLine, to2k } from '.';
 
 test('2k', () => {
   expect(to2k(0, 16)).toBe(0);
@@ -142,4 +142,25 @@ test('parseLine - sw', () => {
     immediate: 10,
     hex: '0xae30000a',
   });
+});
+
+test('parse - line with comments', () => {
+  const code = `# this is a comment
+  sll $zero, $zero, $zero # this does something`;
+  const startingAddress = 0x00400000;
+  const result = parse(code, startingAddress.toString());
+  expect(result).toEqual([
+    {
+      type: 'R',
+      original: 'sll $zero, $zero, $zero',
+      address: startingAddress,
+      opcode: 0,
+      rs: 0,
+      rt: 0,
+      rd: 0,
+      shamt: 0,
+      funct: 0,
+      hex: '0x00000000',
+    },
+  ]);
 });
