@@ -29,7 +29,13 @@ export type JType = InstructionBase & {
   target: number;
 };
 
-export type Instruction = RType | IType | JType;
+export type LabelLine = {
+  type: 'L';
+  original: string;
+  address: number;
+};
+
+export type Instruction = RType | IType | JType | LabelLine | null;
 
 type Context = {
   labels: Record<string, number>;
@@ -287,11 +293,20 @@ const calcITypeHex = ({
 }: Pick<IType, 'opcode' | 'rs' | 'rt' | 'immediate'>) =>
   `0x${to2kHex((opcode << 26) | (rt << 16) | (rs << 21) | to2k(immediate, 16))}`;
 
+const parseLabel = (line: string, { address }: Context): LabelLine => {
+  return {
+    type: 'L',
+    original: line,
+    address,
+  };
+};
+
 /// Parse a line of code
 export const parseLine = (line: string, address: Context) =>
   parseRType(line, address) ??
   parseIType(line, address) ??
-  parseJType(line, address);
+  parseJType(line, address) ??
+  parseLabel(line, address);
 
 /// Parse a program
 export const parse = (code: string, startingAddressString: string) => {
@@ -316,13 +331,18 @@ export const parse = (code: string, startingAddressString: string) => {
   });
 
   const globalContext = { labels, startingAddress };
+  // only count instrucions, not labels
+  var instructionIdx = 0;
 
-  return lines
-    .filter((line) => !line.endsWith(':'))
-    .map((line, idx) =>
-      parseLine(line, {
-        ...globalContext,
-        address: startingAddress + 4 * idx,
-      })
-    );
+  // Parse everything that isn't a label
+  return lines.map((line) => {
+    const parsed = parseLine(line, {
+      ...globalContext,
+      address: startingAddress + 4 * instructionIdx,
+    });
+
+    if (!line.endsWith(':')) instructionIdx++;
+
+    return parsed;
+  });
 };
