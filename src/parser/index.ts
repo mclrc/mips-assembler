@@ -98,15 +98,15 @@ const ITYPE_OPCODES = {
 const COMMAND_SCHEMAS = {
   RTYPE: new RegExp(
     // Matches lines like `add $t0, $t1, $t2`
-    `(${Object.keys(RTYPE_FUNCTS).join('|')})\\s+\\$(\\w+),\\s+(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
+    `(${Object.keys(RTYPE_FUNCTS).join('|')})\\s+\\$(\\w+),\\s*(?:\\$(\\w+),)?\\s*\\$(\\w+)\\s*(?:,\\s*(\\w+))?$`
   ),
   ITYPE: new RegExp(
     // Matches lines like `addi $t0, $t1, 10`, and `beq $t0, $t1, L1`
-    `(${Object.keys(ITYPE_OPCODES).join('|')})\\s+\\$(\\w+),(?:\\s+\\$(\\w+),)?\\s*(-?\\w+)$`
+    `(${Object.keys(ITYPE_OPCODES).join('|')})\\s+\\$(\\w+),(?:\\s*\\$(\\w+),)?\\s*(-?\\w+)$`
   ),
   ITYPE_MEMORY: new RegExp(
     // Matches memory instructions like `lw $t0, 10($t1)` and `sw $t0, ($t1)`
-    `(${Object.keys(MEMORY_OPCODES).join('|')})\\s+\\$(\\w+),\\s+(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
+    `(${Object.keys(MEMORY_OPCODES).join('|')})\\s+\\$(\\w+),\\s*(-?\\w+)?(?:\\(\\$(\\w+)\\))?$`
   ),
 };
 
