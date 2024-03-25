@@ -269,8 +269,8 @@ const parseIType = (
     isBranch ? branchOffset : parseIntMaybeHex(immediateString),
     16
   );
-  var rt = REGISTER_MAP[rtString] ?? 0;
-  var rs = REGISTER_MAP[rsString] ?? 0;
+  let rt = REGISTER_MAP[rtString] ?? 0;
+  let rs = REGISTER_MAP[rsString] ?? 0;
   if (!isBranch && !isMemory) [rs, rt] = [rt, rs];
 
   return {
