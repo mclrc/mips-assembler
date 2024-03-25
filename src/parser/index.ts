@@ -256,6 +256,7 @@ const parseIType = (
   const opcode = ITYPE_OPCODES[name] ?? MEMORY_OPCODES[name];
 
   const isBranch = Object.keys(BRANCH_OPCODES).includes(name);
+  const isMemory = Object.keys(MEMORY_OPCODES).includes(name);
 
   // If it's a branch instruction, calculate the branch offset
   const branchOffset =
@@ -268,9 +269,9 @@ const parseIType = (
     isBranch ? branchOffset : parseIntMaybeHex(immediateString),
     16
   );
-
-  const rt = REGISTER_MAP[rtString] ?? 0;
-  const rs = REGISTER_MAP[rsString] ?? 0;
+  let rt = REGISTER_MAP[rtString] ?? 0;
+  let rs = REGISTER_MAP[rsString] ?? 0;
+  if (!isBranch && !isMemory) [rs, rt] = [rt, rs];
 
   return {
     type: 'I' as const,
