@@ -253,7 +253,7 @@ const parseIType = (
     immediate: immediateString,
   } = parsedSchema;
 
-  const opcode = ITYPE_OPCODES[name];
+  const opcode = ITYPE_OPCODES[name] ?? MEMORY_OPCODES[name];
 
   const isBranch = Object.keys(BRANCH_OPCODES).includes(name);
 
